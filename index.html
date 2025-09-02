@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Qwinto – Solo</title>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e85d3f">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <style>
+    :root{
+      --orange:#e85d3f;
+      --yellow:#f3c640;
+      --purple:#5b45ad;
+      --ink:#1b1b1f;
+      --muted:#8b8b95;
+      --bg:#fafafa;
+      --card:#ffffff;
+      --ok:#0f915b;
+      --bad:#c62828;
+      --ring: 3px;
+      color-scheme: light;
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font:16px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:var(--bg);
+      color:var(--ink);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wrap{
+      max-width:980px;
+      margin:0 auto;
+      padding:16px clamp(12px,4vw,24px) 28px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+    header{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; flex-wrap:wrap;
+    }
+    h1{font-size:clamp(20px,3.2vw,28px); margin:0; font-weight:800; letter-spacing:.2px;}
+    .toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    button{
+      appearance:none; border:0; border-radius:12px; padding:10px 14px; font-weight:700;
+      background:#222; color:#fff; cursor:pointer;
+      box-shadow:0 2px 6px rgba(0,0,0,.12);
+    }
+    button.secondary{ background:#eee; color:#222; }
+    button.warn{ background:var(--bad); color:#fff; }
+    button:disabled{ opacity:.5; pointer-events:none }
+
+    .board{
+      background:var(--card);
+      border-radius:16px;
+      box-shadow:0 6px 20px rgba(0,0,0,.08);
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+    .rows{ display:flex; flex-direction:column; gap:12px; }
+    .row{
+      display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:8px;
+      align-items:center; padding:8px; border-radius:12px; position:relative;
+    }
+    .row[data-color="orange"]{ background: color-mix(in oklab, var(--orange) 16%, white); }
+    .row[data-color="yellow"]{ background: color-mix(in oklab, var(--yellow) 20%, white); }
+    .row[data-color="purple"]{ background: color-mix(in oklab, var(--purple) 16%, white); }
+
+    .cell{
+      aspect-ratio: 1.1 / 1;
+      border-radius:10px; display:grid; place-items:center; font-weight:800;
+      font-size: clamp(14px, 2.4vw, 22px);
+      user-select:none;
+      transition: transform .12s ease, box-shadow .12s ease, outline-offset .12s ease, border-color .12s ease;
+      position:relative;
+    }
+    .cell.o{ background:#fff; border:2px solid rgba(0,0,0,.12); border-radius:999px; }
+    .cell.p{
+      background:#fff; border:2px solid rgba(0,0,0,.18);
+      /* piirtomuoto */
+      clip-path: polygon(50% 0%, 95% 38%, 78% 95%, 22% 95%, 5% 38%);
+    }
+    .cell.x{ background:transparent; border:0; opacity:.25; pointer-events:none }
+    .cell.filled{ background:#fff; border-color: rgba(0,0,0,.22); }
+.cell.highlight {
+  background: rgba(26,115,232,0.25); /* sinertävä korostus */
+}
+.cell.p.highlight {
+  background: rgba(26,115,232,0.25);
+}
+
+
+    .cell.highlight:active{ transform: scale(.98); }
+    .row-label{
+      position:absolute; inset:6px auto auto 8px; font-weight:800; font-size:12px; color:#222; opacity:.65;
+      padding:2px 8px; border-radius:999px; background:#fff7; backdrop-filter: blur(2px);
+    }
+
+.panel{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+    .dice-card,.score-card{
+      background:var(--card); border-radius:16px; padding:16px;
+      box-shadow:0 6px 20px rgba(0,0,0,.08);
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .dice-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .die{
+      width:48px; height:48px; border-radius:12px; display:grid; place-items:center; font-weight:900; color:#fff;
+      cursor:pointer; user-select:none; box-shadow: inset 0 -3px 0 rgba(0,0,0,.16), 0 4px 10px rgba(0,0,0,.16);
+      transform: translateZ(0);
+      font-size:20px;
+    }
+    .die[data-color="orange"]{ background:var(--orange); }
+    .die[data-color="yellow"]{ background:var(--yellow); color:#222; font-weight:900; }
+    .die[data-color="purple"]{ background:var(--purple); }
+    .die.off { filter:saturate(.2) brightness(.85); opacity:.65; }
+
+.sum-badge{
+  font-size: clamp(20px, 4vw, 40px);
+  font-weight:900;
+  display:flex; align-items:center; gap:6px;
+}
+
+    .small{ font-size:12px; color:var(--muted) }
+    .score-table{ display:grid; grid-template-columns: 1fr auto; row-gap:6px; column-gap:12px; font-size:15px; }
+    .score-table strong{font-size:16px}
+    .bad{ color:var(--bad); font-weight:800 }
+    .good{ color:var(--ok); font-weight:800 }
+    .status{ font-weight:700; min-height:1.4em }
+    .legend{ font-size:12px; color:var(--muted) }
+    * { touch-action: manipulation; }
+	
+	.fail-marks{
+  display:flex;
+  gap:6px;
+  margin-left:8px;
+}
+.fail-circle{
+  width:18px; height:18px;
+  border-radius:50%;
+  border:2px solid var(--bad);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:900;
+  color:var(--bad);
+  line-height:1;
+}
+.fail-circle.used{
+  background:var(--bad);
+  color:#fff;
+}
+.status-panel{
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  padding: 12px 16px;
+  margin-top: 12px;
+}
+.status{
+  font-weight:700;
+  min-height:1.6em;
+}
+#diceRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  /* pidä korkeus samana ennen ja jälkeen heiton */
+  min-height: 56px;           /* säädä tarpeen mukaan (48px noppaan + marginaali) */
+  flex-wrap: nowrap;          /* estä rivinvaihto leveällä; */
+}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Qwinto — Solo</h1>
+      <div class="toolbar">
+        <button id="newGameBtn" class="secondary" title="Aloita alusta">Uusi peli</button>
+      </div>
+    </header>
+
+    <div class="board" id="board">
+      <div class="rows" id="rows"></div>
+
+      <div class="panel">
+<div class="dice-card">
+  <div class="dice-row" id="diceRow">
+    <div class="die" data-color="orange" data-idx="0"><span class="dval">⋯</span></div>
+    <div class="die" data-color="yellow" data-idx="1"><span class="dval">⋯</span></div>
+    <div class="die" data-color="purple" data-idx="2"><span class="dval">⋯</span></div>
+
+    <!-- summa tähän viereen -->
+    <div class="sum-badge" id="sumBadge" style="display:none; margin-left:12px;">
+      <span>=</span>
+      <span id="sumVal">—</span>
+    </div>
+  </div>
+
+  <div class="dice-row">
+    <button id="rollBtn">Heitä</button>
+    <button id="rerollBtn" class="secondary" disabled>Uusintaheitto</button>
+    <button id="failBtn" class="warn" disabled>Merkitse virhe</button>
+    <div id="failMarks" class="fail-marks"></div>
+  </div>
+</div>
+
+<!-- Status siirretty tänne -->
+<div class="status-panel">
+  <div class="status" id="status">
+    Valitse heitettävät nopat (1–3) ja paina <em>Heitä</em>.
+  </div>
+</div>
+
+
+        <div class="score-card">
+          <div class="score-table" id="scoreTable">
+            <div>Oranssi rivi</div>   <div id="rowScore0">0</div>
+            <div>Keltainen rivi</div> <div id="rowScore1">0</div>
+            <div>Violetti rivi</div>  <div id="rowScore2">0</div>
+            <div>Pystysarakkeiden bonukset (pentagonit)</div> <div id="colBonus">0</div>
+            <div>Virheet (−5 p/kpl)</div> <div id="fails" class="bad">0</div>
+            <div><strong>Yhteensä</strong></div> <div id="total"><strong>0</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="legend">Säännöt (tiivistetty): rivillä numerot kasvavat vasemmalta oikealle, eikä samassa pystysarakkeessa saa olla samaa numeroa kahdesti. Heittäjä merkitsee virheen, jos ei sijoita summaa. Peli päättyy, kun kaksi riviä on täynnä tai virheitä on 4. Pisteytys: valmiit rivit = oikean reunan numero; keskeneräiset = 1 p/merkintä; täydet 3-kentän sarakkeet = sarakkeen pentagonin numero; virheistä −5 p/kpl.</div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- PELILOGIIKKA ----------
+
+    // Laudan malli (x = ei kenttää, o = ympyrä, p = pentagoni)
+    const TEMPLATE = [
+      ['x','x','o','p','o','x','o','p','o','o','o','o'], // 0 = oranssi
+      ['x','o','o','o','o','o','x','o','p','o','o','x'], // 1 = keltainen
+      ['o','o','p','o','x','o','o','o','o','p','x','x'], // 2 = violetti
+    ];
+    const COLORS = ['orange','yellow','purple'];
+    const ROW_NAMES = ['','',''];
+    const COLOR_NAMES = ['oranssi','keltainen','violetti'];
+    // Pelin tila
+    const state = {
+      board: [],              // [{type, value}] per cell
+      fails: 0,
+      selectedDice: [true,true,true], // oranssi, keltainen, violetti
+      lastRoll: null,         // {dice:[bool,bool,bool], values:[n|0], sum, rerollLeft:true}
+      gameOver: false,
+    };
+
+    // DOM-viitteet
+    const rowsEl = document.getElementById('rows');
+    const statusEl = document.getElementById('status');
+    const rollBtn = document.getElementById('rollBtn');
+    const rerollBtn = document.getElementById('rerollBtn');
+    const failBtn = document.getElementById('failBtn');
+    const newGameBtn = document.getElementById('newGameBtn');
+    const sumBadge = document.getElementById('sumBadge');
+    const sumVal = document.getElementById('sumVal');
+    
+
+    // ---------- Alustus ----------
+    function initGame(){
+      state.board = TEMPLATE.map(row => row.map(ch => ({ type: ch, value: null })));
+      state.fails = 0;
+      state.selectedDice = [true,true,true];
+      state.lastRoll = null;
+      state.gameOver = false;
+      renderBoard();
+      renderDiceSelection(); // näyttää "⋯"
+      renderScores();
+      setStatus('Valitse heitettävät nopat (1–3) ja paina <em>Heitä</em>.');
+      sumBadge.style.display = 'none';
+      rollBtn.disabled = false;
+      rerollBtn.disabled = true;
+      failBtn.disabled = true;
+	  renderFailMarks();
+    }
+
+    // ---------- Heitot ----------
+    function rollDice(isReroll=false){
+      if (state.gameOver) return;
+      const diceSel = isReroll ? state.lastRoll?.dice.slice() : state.selectedDice.slice();
+      const count = diceSel.filter(Boolean).length;
+      if (count === 0){ setStatus('Valitse vähintään yksi noppa.'); return; }
+
+      // Reroll tarkistus
+      if (isReroll){
+        if (!state.lastRoll){ setStatus('Ei uusittavaa heittoa.'); return; }
+        if (!state.lastRoll.rerollLeft){ setStatus('Uusintaheitto on jo käytetty.'); return; }
+      }
+
+      const values = [0,0,0];
+      for (let i=0;i<3;i++){
+        if (diceSel[i]) values[i] = 1 + Math.floor(Math.random()*6);
+      }
+      const sum = values.reduce((a,b)=>a+b,0);
+
+      state.lastRoll = {
+        dice: diceSel,
+        values,
+        sum,
+        rerollLeft: isReroll ? false : true
+      };
+
+      // Päivitä nopan tekstit: käytetyt näyttävät silmäluvun, muut "–"
+      renderDiceFaces(values, diceSel);
+
+      sumVal.textContent = sum;
+
+      sumBadge.style.display = 'flex';
+      rerollBtn.disabled = !state.lastRoll.rerollLeft;
+      failBtn.disabled = false;
+      rollBtn.disabled = true;
+
+      // Korosta sallitut ruudut
+      highlightValidCells();
+const usedColors = diceSel
+  .map((on,i)=> on ? COLOR_NAMES[i] : null)
+  .filter(Boolean)
+  .join(' + ');
+
+setStatus(`Heitit: ${usedColors}. Summa = <strong>${sum}</strong>.`);
+
+    }
+
+function renderFailMarks(){
+  const cont = document.getElementById('failMarks');
+  cont.innerHTML = '';
+  for (let i=0;i<4;i++){
+    const div = document.createElement('div');
+    div.className = 'fail-circle' + (i < state.fails ? ' used' : '');
+    if (i < state.fails) div.textContent = '×';
+    cont.appendChild(div);
+  }
+}
+
+    // ---------- Sijoituskelpoisten ruutujen korostus ----------
+function highlightValidCells(){
+  // Tyhjennä vanhat
+  document.querySelectorAll('.cell').forEach(el => el.classList.remove('highlight'));
+
+  const allowedRows = state.lastRoll.dice.map((on,i)=>on?i:-1).filter(i=>i>=0);
+  const sum = state.lastRoll.sum;
+
+  for (const r of allowedRows){
+    for (let c=0;c<12;c++){
+      const cell = state.board[r][c];
+      if (cell.type==='x' || cell.value!==null) continue;
+      if (isLegalPlacement(r,c,sum)){
+        getCellEl(r,c).classList.add('highlight');
+      }
+    }
+  }
+}
+
+
+    // Sääntöjen tarkistus
+    function isLegalPlacement(r,c,val){
+      const row = state.board[r];
+
+      // 1) Rivillä kasvaa vasemmalta oikealle (tiukasti)
+      for(let i=0;i<c;i++){
+        const v = row[i].value;
+        if (v!==null && !(v < val)) return false;
+      }
+      for(let i=c+1;i<row.length;i++){
+        const v = row[i].value;
+        if (v!==null && !(val < v)) return false;
+      }
+
+      // 2) Pystysarakkeessa ei saa olla samaa numeroa kahdesti (vain solut, joissa on kenttä)
+      for(let rr=0; rr<3; rr++){
+        if (rr===r) continue;
+        const other = state.board[rr][c];
+        if (other && other.type!=='x' && other.value===val) return false;
+      }
+      return true;
+    }
+
+    // ---------- Käyttäjän klikkaus ruutuun ----------
+    function handleCellClick(e){
+      const el = e.currentTarget;
+      if (!state.lastRoll || state.gameOver) return;
+      if (!el.classList.contains('highlight')) return;
+
+      const r = +el.dataset.r;
+      const c = +el.dataset.c;
+      const val = state.lastRoll.sum;
+
+      // Kirjaa numero
+      state.board[r][c].value = val;
+
+      // Siivoa heiton tila
+      afterPlacement();
+    }
+
+    function afterPlacement(){
+      // Poista korostukset
+      document.querySelectorAll('.cell').forEach(el => el.classList.remove('highlight'));
+
+      // Nollaa heitto
+      state.lastRoll = null;
+      sumBadge.style.display = 'none';
+      rerollBtn.disabled = true;
+      failBtn.disabled = true;
+      rollBtn.disabled = false;
+
+      // Resetoi nopat: kaikki päälle ja ”⋯”
+      state.selectedDice = [true,true,true];
+      renderDiceSelection();
+
+      renderBoard();
+      renderScores();
+
+      // Tarkista päättyikö
+      if (checkGameEnd()){
+        endGame();
+      } else {
+        setStatus('Heitto päättynyt. Valitse nopat ja heitä uudelleen.');
+      }
+	  renderFailMarks();
+    }
+
+    // ---------- Virhemerkintä ----------
+function markFail(){
+  if (!state.lastRoll || state.gameOver) return;
+  state.fails++;
+  renderFailMarks();
+  afterPlacement();
+}
+
+
+    // ---------- Pisteytys ----------
+    function computeScores(){
+      // Rivipisteet
+      const rowScores = [0,0,0];
+      let completedRows = 0;
+
+      for (let r=0;r<3;r++){
+        const row = state.board[r];
+        const cells = row.filter(c=>c.type!=='x');
+        const filled = cells.filter(c=>c.value!==null);
+        if (filled.length === cells.length){
+          completedRows++;
+          // Oikean reunan (viimeisen ei-x) arvo
+          let lastVal = null;
+          for (let c=row.length-1;c>=0;c--){
+            if (row[c].type!=='x'){ lastVal = row[c].value; break; }
+          }
+          rowScores[r] = lastVal ?? 0;
+        } else {
+          rowScores[r] = filled.length;
+        }
+      }
+
+      // 3-kentän pysty­sarakkeiden bonukset: sarake täynnä → pentagonin arvo pisteiksi
+      let colBonus = 0;
+      for (let c=0;c<12;c++){
+        const cells = [0,1,2].map(r => state.board[r][c]).filter(cell => cell && cell.type!=='x');
+        if (cells.length===3){
+          const allFilled = cells.every(cell => cell.value!==null);
+          if (allFilled){
+            const pCell = cells.find(cell => cell.type==='p');
+            if (pCell && typeof pCell.value==='number'){
+              colBonus += pCell.value;
+            }
+          }
+        }
+      }
+
+      const total = rowScores.reduce((a,b)=>a+b,0) + colBonus + (-5 * state.fails);
+      return { rowScores, colBonus, total, completedRows };
+    }
+
+    function renderScores(){
+      const {rowScores, colBonus, total} = computeScores();
+      for (let r=0;r<3;r++){
+        document.getElementById('rowScore'+r).textContent = rowScores[r];
+      }
+      document.getElementById('colBonus').textContent = colBonus;
+      document.getElementById('fails').textContent = `-${state.fails*5}`;
+      document.getElementById('total').innerHTML = `<strong>${total}</strong>`;
+    }
+
+    function checkGameEnd(){
+      const {completedRows} = computeScores();
+      return state.fails>=4 || completedRows>=2;
+    }
+
+    function endGame(){
+      state.gameOver = true;
+      rollBtn.disabled = true;
+      rerollBtn.disabled = true;
+      failBtn.disabled = true;
+      document.querySelectorAll('.cell').forEach(el => el.classList.remove('highlight'));
+      const {rowScores, colBonus, total} = computeScores();
+      setStatus(`Peli päättyi! Rivipisteet: [${rowScores.join(', ')}], sarakebonukset: ${colBonus}, virheet: ${state.fails} × −5. <strong>Loppupisteet: ${total}</strong>. Paina “Uusi peli” aloittaaksesi alusta.`);
+    }
+
+    // ---------- Piirto ----------
+    function renderBoard(){
+      rowsEl.innerHTML = '';
+      for (let r=0;r<3;r++){
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'row';
+        rowDiv.dataset.color = COLORS[r];
+        rowDiv.innerHTML = `<div class="row-label">${ROW_NAMES[r]}</div>`;
+        for (let c=0;c<12;c++){
+          const cell = state.board[r][c];
+          const div = document.createElement('div');
+          div.className = `cell ${cell.type}`;
+          div.dataset.r = r; div.dataset.c = c;
+          if (cell.value!==null){
+            div.classList.add('filled');
+            div.textContent = cell.value;
+          } else {
+            div.textContent = '';
+          }
+          if (cell.type!=='x'){
+            div.addEventListener('click', handleCellClick);
+          }
+          rowDiv.appendChild(div);
+        }
+        rowsEl.appendChild(rowDiv);
+      }
+    }
+    function getCellEl(r,c){ return rowsEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`); }
+
+    // ---------- Noppien renderöinti ----------
+    function renderDiceSelection(){
+      // näyttää valintatilassa ”⋯” ja asettaa on/off -ulkoasun
+      document.querySelectorAll('.die').forEach(el=>{
+        const i = +el.dataset.idx;
+        el.classList.toggle('off', !state.selectedDice[i]);
+        el.setAttribute('aria-pressed', state.selectedDice[i] ? 'true' : 'false');
+        const span = el.querySelector('.dval');
+        if (span) span.textContent = '⋯';
+      });
+    }
+    function renderDiceFaces(values, diceSel){
+      // näyttää heiton jälkeiset silmäluvut; käyttämättömille ”–”
+      document.querySelectorAll('.die').forEach(el=>{
+        const i = +el.dataset.idx;
+        const span = el.querySelector('.dval');
+        if (!span) return;
+        if (diceSel[i]){
+          span.textContent = values[i] || '–';
+        } else {
+          span.textContent = '–';
+        }
+        // Heiton aikana ei voi muuttaa valintaa
+        el.classList.toggle('off', !diceSel[i]);
+        el.setAttribute('aria-pressed', diceSel[i] ? 'true' : 'false');
+      });
+    }
+
+    function renderDiceSelectionFromState(){
+      // apu jos joskus tarvitaan heiton jälkeen valintojen päivitys
+      document.querySelectorAll('.die').forEach(el=>{
+        const i = +el.dataset.idx;
+        el.classList.toggle('off', !state.selectedDice[i]);
+        el.setAttribute('aria-pressed', state.selectedDice[i] ? 'true' : 'false');
+      });
+    }
+
+    function setStatus(html){ statusEl.innerHTML = html; }
+
+    // ---------- Tapahtumat ----------
+    document.querySelectorAll('.die').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        if (state.lastRoll){ return; } // ei muokata kesken heittovuoron
+        const i = +el.dataset.idx;
+        state.selectedDice[i] = !state.selectedDice[i];
+        // vähintään yksi noppa
+        if (!state.selectedDice.some(Boolean)){
+          state.selectedDice[i] = true;
+        }
+        renderDiceSelectionFromState();
+      });
+    });
+    rollBtn.addEventListener('click', ()=> rollDice(false));
+    rerollBtn.addEventListener('click', ()=> rollDice(true));
+    failBtn.addEventListener('click', markFail);
+    newGameBtn.addEventListener('click', initGame);
+
+    // ---------- Käyntiin ----------
+    initGame();
+	if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .catch(err => console.error('SW rekisteröinti epäonnistui:', err));
+  });
+}
+  </script>
+</body>
+</html>
