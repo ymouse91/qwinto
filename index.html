@@ -69,9 +69,9 @@
       display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:8px;
       align-items:center; padding:8px; border-radius:12px; position:relative;
     }
-    .row[data-color="orange"]{ background: color-mix(in oklab, var(--orange) 16%, white); }
-    .row[data-color="yellow"]{ background: color-mix(in oklab, var(--yellow) 20%, white); }
-    .row[data-color="purple"]{ background: color-mix(in oklab, var(--purple) 16%, white); }
+    .row[data-color="orange"]{ background: color-mix(in oklab, var(--orange) 50%, white); }
+    .row[data-color="yellow"]{ background: color-mix(in oklab, var(--yellow) 60%, white); }
+    .row[data-color="purple"]{ background: color-mix(in oklab, var(--purple) 50%, white); }
 
     .cell{
       aspect-ratio: 1.1 / 1;
@@ -484,6 +484,8 @@ function markFail(){
       return { rowScores, colBonus, total, completedRows };
     }
 
+
+
     function renderScores(){
       const {rowScores, colBonus, total} = computeScores();
       for (let r=0;r<3;r++){
@@ -498,16 +500,36 @@ function markFail(){
       const {completedRows} = computeScores();
       return state.fails>=4 || completedRows>=2;
     }
+function arvioiTulos(pisteet){
+  if (pisteet <= 10)   return {icon:"🌧️", text:"Heikko"};
+  if (pisteet <= 15)  return {icon:"🌥️", text:"Välttävä"};
+  if (pisteet <= 21)  return {icon:"🌤️", text:"Perus"};
+  if (pisteet <= 29)  return {icon:"☀️", text:"Hyvä"};
+  if (pisteet <= 36)  return {icon:"🏆", text:"Kova"};
+  return {icon:"👑", text:"Mestari"};
+}
 
-    function endGame(){
-      state.gameOver = true;
-      rollBtn.disabled = true;
-      rerollBtn.disabled = true;
-      failBtn.disabled = true;
-      document.querySelectorAll('.cell').forEach(el => el.classList.remove('highlight'));
-      const {rowScores, colBonus, total} = computeScores();
-      setStatus(`Peli päättyi! Rivipisteet: [${rowScores.join(', ')}], sarakebonukset: ${colBonus}, virheet: ${state.fails} × −5. <strong>Loppupisteet: ${total}</strong>. Paina “Uusi peli” aloittaaksesi alusta.`);
-    }
+function endGame(){
+  state.gameOver = true;
+  rollBtn.disabled = true;
+  rerollBtn.disabled = true;
+  failBtn.disabled = true;
+  document.querySelectorAll('.cell').forEach(el => el.classList.remove('highlight'));
+
+  const {rowScores, colBonus, total} = computeScores();
+  const arvio = arvioiTulos(total);
+
+  setStatus(`
+    <div>
+      <p>Peli päättyi!</p>
+      <p>Rivipisteet: [${rowScores.join(', ')}], sarakebonukset: ${colBonus}, virheet: ${state.fails} × −5</p>
+      <p><strong>Loppupisteet: ${total}</strong></p>
+      <div style="font-size:2em; margin:6px 0;">${arvio.icon}</div>
+      <p>${arvio.text}</p>
+      <p>Paina “Uusi peli” aloittaaksesi alusta.</p>
+    </div>
+  `);
+}
 
     // ---------- Piirto ----------
     function renderBoard(){
