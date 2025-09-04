@@ -501,11 +501,11 @@ function markFail(){
       return state.fails>=4 || completedRows>=2;
     }
 function arvioiTulos(pisteet){
-  if (pisteet <= 10)   return {icon:"🌧️", text:"Heikko"};
-  if (pisteet <= 15)  return {icon:"🌥️", text:"Välttävä"};
-  if (pisteet <= 21)  return {icon:"🌤️", text:"Perus"};
-  if (pisteet <= 29)  return {icon:"☀️", text:"Hyvä"};
-  if (pisteet <= 36)  return {icon:"🏆", text:"Kova"};
+  if (pisteet <= 15)   return {icon:"🌧️", text:"Heikko"};
+  if (pisteet <= 21)  return {icon:"🌥️", text:"Välttävä"};
+  if (pisteet <= 29)  return {icon:"🌤️", text:"Perus"};
+  if (pisteet <= 39)  return {icon:"☀️", text:"Hyvä"};
+  if (pisteet <= 51)  return {icon:"🏆", text:"Kova"};
   return {icon:"👑", text:"Mestari"};
 }
 
